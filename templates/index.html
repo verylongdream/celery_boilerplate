@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Numbers</title>
+    <script>
+        // Function to send a POST request to the Flask server
+        function addNumbers() {
+            // Get values from form fields
+            var x = document.getElementById('numberX').value;
+            var y = document.getElementById('numberY').value;
+
+            // Prepare the request payload
+            var data = { 'x': parseInt(x, 10), 'y': parseInt(y, 10) };
+
+            // Use fetch API to send a POST request
+            fetch('http://localhost:5000/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json()) // Parse the JSON response
+            .then(data => {
+                console.log('Success:', data);
+                // Display the result
+                document.getElementById('result_id').textContent = 'Task ID: ' + data.task_id;
+                pollForCompletion(data.task_id);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+
+            // Prevent form submission
+            return false;
+        }
+      function pollForCompletion(taskId) {
+        fetch('/check_task/' + taskId)
+          .then(response => response.json())
+          .then(data => {
+            if(data.state === 'SUCCESS') {
+              console.log('Result: ', data.result);
+              document.getElementById('result_id').textContent = 'Task Result: ' + data.result;
+            } else if(data.state !== 'FAILURE') {
+              // If not done, wait a bit and try again
+              setTimeout(() => pollForCompletion(taskId), 2000);
+              document.getElementById('result_id').textContent = 'Waiting...'
+            } else {
+              // Handle failure
+              console.error('Task failed: ', data.status);
+            }
+    });
+}
+    </script>
+</head>
+<body>
+    <h1>Add Two Numbers</h1>
+    <form onsubmit="return addNumbers()">
+        <label for="numberX">Number X:</label>
+        <input type="number" id="numberX" name="numberX" required>
+        <br>
+        <label for="numberY">Number Y:</label>
+        <input type="number" id="numberY" name="numberY" required>
+        <br>
+        <button type="submit">Add Numbers</button>
+    </form>
+    <p id="result_id"></p>
+    <p id="result"></p>
+</body>
+</html>
+
